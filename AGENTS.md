@@ -13,7 +13,7 @@ is its guide. When the person wants the iiSU look:
 - Clean the TV and install the launcher exactly as PROMPT.md says; the skin changes nothing about that.
 - Then push a theme: `tools/theme.sh themes/iisu-dark` (or `iisu-light`).
 - A name, a picture or a GIF they give you goes in their own copy under `work/themes/` (git ignores `work/`), as
-  `greeting_name`, `avatar.png` (square) and `screensaver.gif`, never into `themes/`. Halve a 50 fps GIF with
+  `greeting_name`, a square picture named avatar.png and a GIF named screensaver.gif, never into `themes/`. Halve a 50 fps GIF with
   `tools/gif_halve.py` first.
 - This fork's APK size gate is 640 KB (upstream: 480 KB), for the skin's fonts and sounds.
 
