@@ -67,7 +67,7 @@ del() { echo "rm -f $DIR/$1 2>/dev/null; content delete --uri $URI/$1 2>/dev/nul
 CLEAR_WALLPAPERS="mkdir -p $DIR/wallpapers 2>/dev/null; rm -f $DIR/wallpapers/*.jpg $DIR/wallpapers/*.jpeg $DIR/wallpapers/*.png $DIR/wallpapers/*.webp $DIR/wallpapers/*.JPG $DIR/wallpapers/*.JPEG $DIR/wallpapers/*.PNG $DIR/wallpapers/*.WEBP 2>/dev/null; content delete --uri $URI/wallpapers 2>/dev/null"
 
 if [ "${1:-}" = --reset ]; then
-  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del avatar.png); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision); $RESTART; echo reset" | tail -n 1
+  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del avatar.png); $(del screensaver.gif); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision); $RESTART; echo reset" | tail -n 1
   exit 0
 fi
 THEME="${THEME_ARG:?usage: theme.sh <theme folder> | --reset}"
@@ -90,6 +90,13 @@ if [ -f "$THEME/avatar.png" ]; then
   tv "$(put avatar.png)"
 else
   tv "$(del avatar.png)" >/dev/null
+fi
+# And its screensaver animation (iisu_skin): played by the clock screensaver in place of the clock.
+if [ -f "$THEME/screensaver.gif" ]; then
+  "$PY" -I b64push.py "$THEME/screensaver.gif" "$TMP-screensaver.gif"
+  tv "$(put screensaver.gif)"
+else
+  tv "$(del screensaver.gif)" >/dev/null
 fi
 tv "$CLEAR_WALLPAPERS" >/dev/null
 if [ -d "$THEME/wallpapers" ]; then

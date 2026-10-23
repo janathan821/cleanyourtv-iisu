@@ -1,6 +1,7 @@
 package com.gathin.tvhome;
 
 import android.app.Activity;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -14,25 +15,31 @@ import android.view.View;
 public class ClockActivity extends Activity {
 
     private ClockScene scene;
+    /** The iiSU skin's screensaver.gif scene, used instead of the clock when the theme has one. */
+    private IisuScreensaver iisu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.dream_clock);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) iisu = IisuScreensaver.create(this);
+        if (iisu != null) setContentView(iisu.view());
+        else setContentView(R.layout.dream_clock);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE);
-        scene = new ClockScene(getWindow().getDecorView());
+        if (iisu == null) scene = new ClockScene(getWindow().getDecorView());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        scene.start();
+        if (iisu != null) iisu.start();
+        else scene.start();
     }
 
     @Override
     protected void onPause() {
-        scene.stop();
+        if (iisu != null) iisu.stop();
+        else scene.stop();
         super.onPause();
         finish();   // never left behind in the back stack
     }
