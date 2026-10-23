@@ -116,6 +116,7 @@ A new key needs one there in the same pull request.
 | `dock_glass` | bool | The dock band as light frosted glass like the top bar's pills (`false` by default); suits `sky_intensity` or a wallpaper, where the solid band reads as a dark slab |
 | `ambient_glow` | bool | The glow behind the dock in the focused app's colour (`true` by default); `false` keeps only `background_color` or the wallpaper, e.g. for a calm photo background |
 | `app_glow` | bool | The focus highlight glows in the focused app's colour on every tile, as `cinematic_home` does for the dock (`false` by default) |
+| `iisu_skin` | `light`, `dark` or empty | An iiSU-style console-menu look: a dotted backdrop, one frosted panel the grid scrolls in, bezelled tiles, a cyan-to-violet focus ring, a title pill for the focused app, a status pill (network, time, date), an avatar pill in place of Settings (`greeting_name` beside it, and the theme's `avatar.png` if there is one), button hints, Nunito and soft UI sounds. Turns off the wallpaper, sky, dock band, shelf and glows. Empty (the classic look) by default; Launcher settings' Look row overrides it |
 | `fade_rows` | bool | The rows fade out as they scroll up under the clock instead of being cut off at a hard line; the wallpaper or sky shows through. The grid then draws into a hardware layer (about 6 MB of graphics memory at 1080p) (`false` by default) |
 
 ## Wallpapers

@@ -18,6 +18,7 @@ import android.content.pm.ChangedPackages;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.LinearGradient;
@@ -1673,7 +1674,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         settings.setEllipsize(TextUtils.TruncateAt.END);
         settings.setMaxWidth(dp(220));
         // As tall as the clock and title pills (56dp), with the bottom of the top bar level with theirs.
-        settings.setCompoundDrawablesRelative(iisu.avatar(46), null, null, null);
+        settings.setCompoundDrawablesRelative(iisu.avatar(46, loadAvatar()), null, null, null);
         settings.setCompoundDrawableTintList(null);
         settings.setCompoundDrawablePadding(greetingName.isEmpty() ? 0 : dp(10));
         settings.setPaddingRelative(dp(5), 0, dp(greetingName.isEmpty() ? 5 : 20), 0);
@@ -1709,6 +1710,22 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         // The glass draws over everything, the new pill and chips included.
         glass.bringToFront();
         iisu.loadSounds();
+    }
+
+    /** The theme's avatar.png at about the pill's size, or null when there is none or it does not decode. */
+    private Bitmap loadAvatar() {
+        File dir = Config.dir(this);
+        File file = dir == null ? null : new File(dir, Iisu.AVATAR_FILE);
+        if (file == null || !file.isFile() || file.length() > 4L * 1024 * 1024) return null;
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.getPath(), opts);
+        // Sample a large picture down by halves until it is no more than twice the 46dp circle.
+        int target = dp(46) * 2, sample = 1;
+        while (opts.outWidth / (sample * 2) >= target && opts.outHeight / (sample * 2) >= target) sample *= 2;
+        opts = new BitmapFactory.Options();
+        opts.inSampleSize = sample;
+        return BitmapFactory.decodeFile(file.getPath(), opts);
     }
 
     /** The title pill's text; with nothing to name yet it stays hidden rather than an empty pill. */

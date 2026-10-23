@@ -41,6 +41,9 @@ final class Iisu {
 
     static final String LIGHT = "light", DARK = "dark";
 
+    /** A theme's picture for the avatar pill, beside config.json; without it the pixel TV is drawn instead. */
+    static final String AVATAR_FILE = "avatar.png";
+
     static final int CYAN = 0xFF38D3FF, VIOLET = 0xFF8C6BFF, PINK = 0xFFFF7FD4;
 
     /** A known skin name, or "" (the classic look) for anything else. */
@@ -284,8 +287,8 @@ final class Iisu {
     // ---- avatar ---------------------------------------------------------------------------------
 
     /** The avatar in the top-right pill: a little pixel-art TV with a face, on the skin's gradient. */
-    Drawable avatar(int sizeDp) {
-        Drawable d = new Avatar();
+    Drawable avatar(int sizeDp, Bitmap photo) {
+        Drawable d = new Avatar(photo);
         d.setBounds(0, 0, dp(sizeDp), dp(sizeDp));
         return d;
     }
@@ -308,6 +311,13 @@ final class Iisu {
     private static final class Avatar extends Drawable {
         private final Paint circle = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint px = new Paint();
+        /** The theme's avatar.png, or null for the pixel TV. */
+        private final Bitmap photo;
+        private final Paint photoPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+
+        Avatar(Bitmap photo) {
+            this.photo = photo;
+        }
 
         @Override
         protected void onBoundsChange(@NonNull Rect b) {
@@ -319,6 +329,19 @@ final class Iisu {
         public void draw(@NonNull Canvas c) {
             Rect b = getBounds();
             c.drawCircle(b.exactCenterX(), b.exactCenterY(), b.width() / 2f, circle);
+            if (photo != null) {
+                // The picture fills the circle and is cut to it, so a square render reads as a round portrait.
+                if (photoPaint.getShader() == null) {
+                    BitmapShader shader = new BitmapShader(photo, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+                    android.graphics.Matrix m = new android.graphics.Matrix();
+                    m.setRectToRect(new android.graphics.RectF(0, 0, photo.getWidth(), photo.getHeight()),
+                            new android.graphics.RectF(b), android.graphics.Matrix.ScaleToFit.CENTER);
+                    shader.setLocalMatrix(m);
+                    photoPaint.setShader(shader);
+                }
+                c.drawCircle(b.exactCenterX(), b.exactCenterY(), b.width() / 2f, photoPaint);
+                return;
+            }
             int cols = TV_FACE[0].length(), rows = TV_FACE.length;
             // Whole pixels, so the art stays crisp: about 60% of the circle, centred.
             float cell = (float) Math.floor(b.width() * 0.6f / cols);

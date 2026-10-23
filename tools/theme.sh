@@ -67,7 +67,7 @@ del() { echo "rm -f $DIR/$1 2>/dev/null; content delete --uri $URI/$1 2>/dev/nul
 CLEAR_WALLPAPERS="mkdir -p $DIR/wallpapers 2>/dev/null; rm -f $DIR/wallpapers/*.jpg $DIR/wallpapers/*.jpeg $DIR/wallpapers/*.png $DIR/wallpapers/*.webp $DIR/wallpapers/*.JPG $DIR/wallpapers/*.JPEG $DIR/wallpapers/*.PNG $DIR/wallpapers/*.WEBP 2>/dev/null; content delete --uri $URI/wallpapers 2>/dev/null"
 
 if [ "${1:-}" = --reset ]; then
-  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision); $RESTART; echo reset" | tail -n 1
+  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del avatar.png); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision); $RESTART; echo reset" | tail -n 1
   exit 0
 fi
 THEME="${THEME_ARG:?usage: theme.sh <theme folder> | --reset}"
@@ -83,6 +83,13 @@ if [ -f "$THEME/wallpaper.jpg" ]; then
   tv "$(put wallpaper.jpg)"
 else
   tv "$(del wallpaper.jpg)" >/dev/null
+fi
+# The iiSU skin's avatar picture (iisu_skin), shown in the top-right pill.
+if [ -f "$THEME/avatar.png" ]; then
+  "$PY" -I b64push.py "$THEME/avatar.png" "$TMP-avatar.png"
+  tv "$(put avatar.png)"
+else
+  tv "$(del avatar.png)" >/dev/null
 fi
 tv "$CLEAR_WALLPAPERS" >/dev/null
 if [ -d "$THEME/wallpapers" ]; then
