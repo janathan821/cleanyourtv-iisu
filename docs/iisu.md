@@ -22,7 +22,7 @@ Both screenshots are from a Chromecast with Google TV HD (Android 14).
 - Button hints in the bottom corners, and the Settings, Inputs and tile menus restyled to match.
 - [Nunito](https://fonts.google.com/specimen/Nunito), a rounded heavy font (SIL Open Font License), and two soft UI sounds: a tick
   when you move and a chime when you open something.
-- A screensaver that plays your own GIF (a Mii dancing, say) on the light backdrop, with the time in a corner.
+- A screensaver that plays your own GIF (a Mii dancing, say) on the skin's backdrop, with the time in a corner.
 - **Launcher settings → Look**: Classic, iiSU light or iiSU dark, switchable with the remote.
 
 Not affiliated with iiSU or Nintendo. None of iiSU's art, fonts, sounds or code are used: iiSU is closed source,
@@ -77,7 +77,7 @@ mkdir -p work/themes && cp -R themes/iisu-dark work/themes/my-iisu
 |---|---|
 | **Your name** in the avatar pill | `"greeting_name": "Sam"` in `config.json` |
 | **Your picture** in the avatar pill | A square `avatar.png` in the folder, about 192×192, ideally with a transparent background. It is cut to a circle on the cyan-violet gradient. A Mii render cropped to the head works well. |
-| **The screensaver animation** | A `screensaver.gif` in the folder. A transparent background looks best, since it sits on the light dotted backdrop. A 50 fps GIF keeps a weak TV's CPU busy: `python3 tools/gif_halve.py in.gif screensaver.gif` keeps every other frame (same loop length, about half the work). |
+| **The screensaver animation** | A `screensaver.gif` in the folder. A transparent background looks best, since it sits on the skin's dotted backdrop. A 50 fps GIF keeps a weak TV's CPU busy: `python3 tools/gif_halve.py in.gif screensaver.gif` keeps every other frame (same loop length, about half the work). |
 | **Your dock** (the first tiles) | `dock_apps`, as in any theme |
 
 Then push it: `TV_HOST=192.168.1.50 tools/theme.sh work/themes/my-iisu`. The screensaver shows when the TV's own
