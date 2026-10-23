@@ -23,7 +23,7 @@ import androidx.annotation.RequiresApi;
 
 /**
  * The iiSU skin's screensaver (iisu_skin plus a theme's screensaver.gif): the animation, fitted inside the screen,
- * on the light skin's dotted backdrop, with the time in the bottom-left corner. Used by ClockDream and ClockActivity in
+ * on the skin's dotted backdrop, with the time in the bottom-left corner. Used by ClockDream and ClockActivity in
  * place of the clock scene; without the skin or the file they keep the classic clock.
  */
 final class IisuScreensaver {
@@ -62,8 +62,8 @@ final class IisuScreensaver {
         try {
             Drawable d = ImageDecoder.decodeDrawable(ImageDecoder.createSource(file));
             if (!(d instanceof AnimatedImageDrawable)) return null;
-            // Always the light look: the animation is made for a white page, whichever skin Home uses.
-            return new IisuScreensaver(ctx, new Iisu(ctx, Iisu.LIGHT), d);
+            // The same look as Home: navy with a white clock in iisu dark, the pale page with a dark one in light.
+            return new IisuScreensaver(ctx, new Iisu(ctx, cfg.iisuSkin), d);
         } catch (IOException | RuntimeException e) {
             return null;
         }
