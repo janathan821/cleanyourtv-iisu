@@ -97,15 +97,20 @@ final class Iisu {
 
     /** The top-bar pills: frosted at rest, the cyan-to-violet gradient while focused. */
     Drawable pill() {
+        return pill(21);
+    }
+
+    /** The same, with this corner radius: half the height keeps it a pill (or a circle when square). */
+    Drawable pill(float radiusDp) {
         GradientDrawable focused = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{CYAN, VIOLET});
-        focused.setCornerRadius(dp(21));
+        focused.setCornerRadius(dp(radiusDp));
         focused.setStroke(dp(2), 0xFFFFFFFF);
-        GradientDrawable activated = panel(21);
+        GradientDrawable activated = panel(radiusDp);
         activated.setStroke(dp(2), CYAN);
         StateListDrawable s = new StateListDrawable();
         s.addState(new int[]{android.R.attr.state_focused}, focused);
         s.addState(new int[]{android.R.attr.state_activated}, activated);
-        s.addState(new int[]{}, panel(21));
+        s.addState(new int[]{}, panel(radiusDp));
         return s;
     }
 
@@ -274,6 +279,72 @@ final class Iisu {
 
     void playOpen() {
         if (sounds != null) sounds.play(openSound, 0.55f, 0.55f, 2, 0, 1f);
+    }
+
+    // ---- avatar ---------------------------------------------------------------------------------
+
+    /** The avatar in the top-right pill: a little pixel-art TV with a face, on the skin's gradient. */
+    Drawable avatar(int sizeDp) {
+        Drawable d = new Avatar();
+        d.setBounds(0, 0, dp(sizeDp), dp(sizeDp));
+        return d;
+    }
+
+    /** O outline, W screen, E eyes and mouth, P cheeks, A antenna; '.' is see-through. */
+    private static final String[] TV_FACE = {
+            "..A......A..",
+            "...A....A...",
+            "....A..A....",
+            ".OOOOOOOOOO.",
+            ".OWWWWWWWWO.",
+            ".OWWEWWEWWO.",
+            ".OWWEWWEWWO.",
+            ".OWPWWWWPWO.",
+            ".OWWWEEWWWO.",
+            ".OOOOOOOOOO.",
+            "..OO....OO..",
+    };
+
+    private static final class Avatar extends Drawable {
+        private final Paint circle = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint px = new Paint();
+
+        @Override
+        protected void onBoundsChange(@NonNull Rect b) {
+            circle.setShader(new LinearGradient(b.left, b.top, b.right, b.bottom, new int[]{CYAN, VIOLET, PINK}, null,
+                    Shader.TileMode.CLAMP));
+        }
+
+        @Override
+        public void draw(@NonNull Canvas c) {
+            Rect b = getBounds();
+            c.drawCircle(b.exactCenterX(), b.exactCenterY(), b.width() / 2f, circle);
+            int cols = TV_FACE[0].length(), rows = TV_FACE.length;
+            // Whole pixels, so the art stays crisp: about 60% of the circle, centred.
+            float cell = (float) Math.floor(b.width() * 0.6f / cols);
+            if (cell < 1f) cell = 1f;
+            float left = b.exactCenterX() - cols * cell / 2f, top = b.exactCenterY() - rows * cell / 2f;
+            for (int y = 0; y < rows; y++) {
+                for (int x = 0; x < cols; x++) {
+                    int color;
+                    switch (TV_FACE[y].charAt(x)) {
+                        case 'O': case 'E': color = 0xFF1E2240; break;
+                        case 'W': color = 0xFFFFFFFF; break;
+                        case 'P': color = 0xFFFF9BD6; break;
+                        case 'A': color = 0xFFFFFFFF; break;
+                        default: continue;
+                    }
+                    px.setColor(color);
+                    c.drawRect(left + x * cell, top + y * cell, left + (x + 1) * cell, top + (y + 1) * cell, px);
+                }
+            }
+        }
+
+        @Override public int getIntrinsicWidth() { return getBounds().width(); }
+        @Override public int getIntrinsicHeight() { return getBounds().height(); }
+        @Override public void setAlpha(int alpha) { }
+        @Override public void setColorFilter(ColorFilter cf) { }
+        @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
     }
 
     // ---- backdrop --------------------------------------------------------------------------------

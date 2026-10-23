@@ -140,6 +140,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private Iisu iisu;
     /** The skin's title pill, naming the focused app. */
     private TextView iisuTitle;
+    /** The skin's network icon inside the clock pill, which stands in for the Wi-Fi pill. */
+    private ImageView iisuNet;
     /** OK is being held (a long press): its release must not play the open sound a second time. */
     private boolean okHeld;
     private View ambient;
@@ -703,8 +705,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (iisu != null && oldF != null && newF != null && hasWindowFocus()) iisu.playMove();
             // A top-bar pill names itself in the title; an icon-only one keeps its name as the description.
             if (iisu != null && newF instanceof TextView && newF.getParent() == findViewById(R.id.topButtons)) {
-                CharSequence name = ((TextView) newF).getText();
-                setIisuTitle(name == null || name.length() == 0 ? newF.getContentDescription() : name);
+                // The description first: the avatar pill shows a person's name but is the Settings button.
+                CharSequence name = newF.getContentDescription();
+                setIisuTitle(name == null || name.length() == 0 ? ((TextView) newF).getText() : name);
             }
         });
 
@@ -1628,8 +1631,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         divider.setBackgroundColor(dim);
         ((LinearLayout.LayoutParams) divider.getLayoutParams()).height = dp(20);
         TextClock date = findViewById(R.id.date);
-        date.setFormat12Hour("EEE d MMM");
-        date.setFormat24Hour("EEE d MMM");
+        // A numeric date, as iiSU's status bar has it (23/10 in Norway and Britain, 10/23 in the US).
+        String numeric = android.text.format.DateFormat.getBestDateTimePattern(java.util.Locale.getDefault(), "ddMM");
+        date.setFormat12Hour(numeric);
+        date.setFormat24Hour(numeric);
         date.setTextColor(dim);
         date.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f);
         date.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -1638,6 +1643,15 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dateBox.weight = 0f;
         shamsiDate.setTextColor(text);
         stats.setTextColor(dim);
+        // The network icon leads the clock pill, so the pill reads like iiSU's status bar and the Wi-Fi pill goes.
+        iisuNet = new ImageView(this);
+        iisuNet.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        LinearLayout.LayoutParams netLp = new LinearLayout.LayoutParams(dp(26), dp(26));
+        netLp.gravity = Gravity.CENTER_VERTICAL;
+        netLp.setMarginEnd(dp(14));
+        clockRow.addView(iisuNet, 0, netLp);
+        btnWifi.setVisibility(View.GONE);
+        updateWifiLabel();
 
         // Top bar: frosted pills that turn into the cyan-to-violet gradient on focus.
         for (int id : new int[]{R.id.btnInputs, R.id.btnWifi, R.id.btnReorder, R.id.btnLibraryTop, R.id.btnSettings}) {
@@ -1648,6 +1662,29 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             iisu.lift(pill, 3);
         }
         if (wifiPlainTint != null) wifiPlainTint = iisu.pillText();
+        // The avatar pill takes the gear's place and its job: OK opens Settings, holding OK the launcher menu. With
+        // greeting_name set it shows that name beside the avatar; without one it is a round avatar button.
+        TextView settings = findViewById(R.id.btnSettings);
+        CharSequence settingsName = settings.getContentDescription() != null ? settings.getContentDescription()
+                : settings.getText();
+        settings.setContentDescription(settingsName);
+        settings.setText(greetingName);
+        settings.setSingleLine(true);
+        settings.setEllipsize(TextUtils.TruncateAt.END);
+        settings.setMaxWidth(dp(220));
+        // As tall as the clock and title pills (56dp), with the bottom of the top bar level with theirs.
+        settings.setCompoundDrawablesRelative(iisu.avatar(46), null, null, null);
+        settings.setCompoundDrawableTintList(null);
+        settings.setCompoundDrawablePadding(greetingName.isEmpty() ? 0 : dp(10));
+        settings.setPaddingRelative(dp(5), 0, dp(greetingName.isEmpty() ? 5 : 20), 0);
+        settings.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17f);
+        settings.setBackground(iisu.pill(28));
+        ViewGroup.LayoutParams avatarLp = settings.getLayoutParams();
+        avatarLp.width = greetingName.isEmpty() ? dp(56) : ViewGroup.LayoutParams.WRAP_CONTENT;
+        avatarLp.height = dp(56);
+        settings.setLayoutParams(avatarLp);
+        View topButtons = findViewById(R.id.topButtons);
+        ((RelativeLayout.LayoutParams) topButtons.getLayoutParams()).bottomMargin = 0;
 
         // The grid scrolls inside one big frosted panel, clipped to its rounded corners; the hints sit under it.
         View panel = (View) grid.getParent();
@@ -2579,6 +2616,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (wifiOnlineTint != null && btnWifi.getCompoundDrawableTintList() != tint) {
                 btnWifi.setCompoundDrawableTintList(tint);
             }
+        }
+        if (iisuNet != null) {
+            // Green while online with wifi_status_color, else the text colour; faded while offline.
+            iisuNet.setImageResource(icon);
+            iisuNet.setImageTintList(ColorStateList.valueOf(!online ? iisu.textDim()
+                    : wifiOnlineTint != null ? wifiOnlineTint.getDefaultColor() : iisu.text()));
+            iisuNet.setAlpha(online ? 1f : 0.6f);
         }
     }
 
