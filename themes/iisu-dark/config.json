@@ -1,0 +1,16 @@
+{
+  "iisu_skin": "dark",
+  "dock_apps": [
+    "com.netflix.ninja",
+    "com.google.android.youtube.tv",
+    "com.amazon.amazonvideo.livingroom",
+    "com.disney.disneyplus",
+    "com.wbd.stream",
+    "com.apple.atve.androidtv.appletv"
+  ],
+  "columns": 5,
+  "icon_only_buttons": true,
+  "tile_menu": true,
+  "focus_overshoot": false,
+  "wifi_status_color": true
+}

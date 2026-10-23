@@ -48,4 +48,6 @@ jobs:
         run: |
           size=$(stat -c %s launcher/app/build/outputs/apk/release/app-release.apk)
           echo "release APK: $((size / 1024)) KB"
-          test "$size" -lt 491520 || { echo "APK is over 480 KB; the launcher targets 1 GB TVs, keep it small"; exit 1; }
+          # This fork carries the iiSU skin (three Nunito weights and two UI sounds, about 130 KB), so its gate is
+          # 640 KB rather than upstream's 480 KB.
+          test "$size" -lt 655360 || { echo "APK is over 640 KB; the launcher targets 1 GB TVs, keep it small"; exit 1; }

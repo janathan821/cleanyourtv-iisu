@@ -4,6 +4,19 @@ Instructions for coding agents (Claude Code, Codex, Gemini CLI, Cursor, Copilot 
 this repository. People should start with [README.md](README.md) and [CONTRIBUTING.md](CONTRIBUTING.md);
 this file repeats their rules in the form an agent needs, and links to them for the detail.
 
+## This fork: the iiSU skin
+
+This repository is a fork of [Gathin23/cleanyourtv](https://github.com/Gathin23/cleanyourtv) that adds one
+launcher switch, `iisu_skin`, with two themes (`themes/iisu-light`, `themes/iisu-dark`). [docs/iisu.md](docs/iisu.md)
+is its guide. When the person wants the iiSU look:
+
+- Clean the TV and install the launcher exactly as PROMPT.md says; the skin changes nothing about that.
+- Then push a theme: `tools/theme.sh themes/iisu-dark` (or `iisu-light`).
+- A name, a picture or a GIF they give you goes in their own copy under `work/themes/` (git ignores `work/`), as
+  `greeting_name`, `avatar.png` (square) and `screensaver.gif`, never into `themes/`. Halve a 50 fps GIF with
+  `tools/gif_halve.py` first.
+- This fork's APK size gate is 640 KB (upstream: 480 KB), for the skin's fonts and sounds.
+
 ## First: which job are you doing?
 
 | You were asked to | Do this |
@@ -117,7 +130,7 @@ use it and ends with the check to run.
 |---|---|
 | Tests, as CI runs them | `python3 -m unittest discover -s tests -v` after `python3 -m venv tools/venv` and `tools/venv/bin/pip install -r tools/requirements.txt`. On `main`, CI sets `CLEANYOURTV_STRICT=1`, which also checks the README's TV-model count. |
 | Launcher, if you touched `launcher/` | JDK 17, Android SDK platform 34, build-tools 34.0.0. In `launcher/`: `./gradlew --no-daemon testReleaseUnitTest lintRelease assembleRelease`. Lint must stay at zero errors. |
-| APK size gate | `launcher/app/build/outputs/apk/release/app-release.apk` must be under 491,520 B (480 KB). Linux: `stat -c %s`, macOS: `stat -f %z`. |
+| APK size gate | `launcher/app/build/outputs/apk/release/app-release.apk` must be under 655,360 B (640 KB) in this fork (upstream: 491,520 B). Linux: `stat -c %s`, macOS: `stat -f %z`. |
 | README rows | A new list has its row in `README.md` and `examples/README.md`; a theme in `themes/README.md`; an add-on in `addons/README.md`. |
 | One topic per PR | A TV list never rides inside a launcher feature PR. A device's list plus small fixes for that same device can be one PR. |
 | Tested on | Say which TV, Android version and firmware you tested on, in the PR template's "Tested on" line. |
