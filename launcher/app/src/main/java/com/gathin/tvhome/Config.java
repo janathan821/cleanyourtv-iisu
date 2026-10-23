@@ -200,6 +200,14 @@ final class Config {
     final String glowStyle;
 
     static final String GLOW_RADIAL = "radial", GLOW_HORIZON = "horizon";
+    /**
+     * The iiSU-style skin (config.xml / theme iisu_skin, or Launcher settings' Look row): {@link Iisu#LIGHT},
+     * {@link Iisu#DARK}, or empty for the classic look. While it is on, Home is one plain grid on a dotted panel with
+     * no wallpaper, sky, dock band, shelf or glow; see Iisu.
+     */
+    String iisuSkin = "";
+    /** Launcher settings' Look choice, which wins over the theme until Follow theme. */
+    static final String IISU_SKIN_KEY = "iisu_skin";
     /** Show each rotating wallpaper's name from wallpapers/captions.txt (config.xml / theme wallpaper_captions). */
     final boolean wallpaperCaptions;
     /** Answer VIEW_INPUTS with the Inputs menu (handle_view_inputs); see InputsRequestActivity. */
@@ -387,6 +395,7 @@ final class Config {
         int cinematicScrim = res.getInteger(R.integer.cinematic_scrim);
         Map<String, Set<String>> wallpaperMoods = moods(res.getString(R.string.wallpaper_moods));
         String glowStyle = res.getString(R.string.glow_style);
+        String iisuSkin = res.getString(R.string.iisu_skin);
         boolean applied = false;
 
         File dir = dir(ctx);
@@ -467,6 +476,7 @@ final class Config {
             JSONObject moods = json.optJSONObject("wallpaper_moods");
             if (moods != null) wallpaperMoods = moods(moods);
             glowStyle = string(json, "glow_style", glowStyle);
+            iisuSkin = string(json, "iisu_skin", iisuSkin);
         }
         // A theme push or reset invalidates choices made on the TV. On first use, remember the
         // current theme without clearing choices from an older launcher version.
@@ -511,8 +521,23 @@ final class Config {
         // A festive skin comes only from a theme; config.xml has no festival.
         Festival festival = json == null ? Festival.NONE : Festival.parse(string(json, "festival", ""),
                 string(json, "festival_until", ""), string(json, "greeting", ""), string(json, "accent_color", ""));
+        iisuSkin = Iisu.parse(choices.getString(IISU_SKIN_KEY, iisuSkin));
+        if (!iisuSkin.isEmpty()) {
+            // The skin draws its own background and panel: everything that paints under or around the tiles is off.
+            wallpaperEnabled = false;
+            wallpaper = null;
+            wallpapers.clear();
+            skyIntensity = 0;
+            dockRow = false;
+            dockTitle = false;
+            cinematic = false;
+            ambientGlow = false;
+            appGlow = false;
+            fadeRows = false;
+            festival = Festival.NONE;
+        }
 
-        return new Config(dock, fillDock, hidden, libraryApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
+        Config config = new Config(dock, fillDock, hidden, libraryApps, liveTv, liveTvAction, liveTvInputId, packageMap(launchActions), packageMap(appLabels),
                 packageMap(appBanners), panelService,
                 panelAction, panelExtra, coocaaSources, inputAction, inputUriScheme,
                 Math.max(1, columns), Math.max(0, rowsBelow), animations, advancedEffects,
@@ -521,6 +546,8 @@ final class Config {
                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied,
                 festival, inputKeycodes, appKeys, stockHomeRedirect, json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow, fadeRows,
                 Math.max(0, idleClockMinutes), keyFilter, dockGlass, glowStyle, wallpaperCaptions, handleViewInputs, tileMenu, dockEvenPadding, cinematicDots, cinematicWhiteFocus, wifiStatusColor, cinematicScrim, cinematicArt, wallpaperMoods, gamepadPassthrough);
+        config.iisuSkin = iisuSkin;
+        return config;
     }
 
     /**
@@ -564,11 +591,11 @@ final class Config {
             SharedPreferences.Editor editor = choices.edit();
             if (!"absent".equals(token)) editor.remove("columns").remove("animations")
                     .remove("advanced_effects").remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY)
-                    .remove(DOCK_OPACITY_KEY);
+                    .remove(DOCK_OPACITY_KEY).remove(IISU_SKIN_KEY);
             editor.putString(THEME_SIGNATURE_KEY, signature).commit();
         } else if (!seen.equals(signature)) {
             choices.edit().remove("columns").remove("animations").remove("advanced_effects")
-                    .remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY).remove(DOCK_OPACITY_KEY)
+                    .remove(ROWS_BELOW_DOCK_KEY).remove(WALLPAPER_CHOICE_KEY).remove(DOCK_OPACITY_KEY).remove(IISU_SKIN_KEY)
                     .putString(THEME_SIGNATURE_KEY, signature).commit();
         }
     }

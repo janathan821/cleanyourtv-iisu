@@ -51,6 +51,17 @@
     <string name="dock_opacity_label">Dock band opacity</string>
     <string name="wallpaper_label">Wallpaper</string>
     <string name="wallpaper_state">Wallpaper: %1$s</string>
+    <!-- The iiSU skin (config.xml iisu_skin): the Look row in Launcher settings and Home's button hints. -->
+    <string name="look_state">Look: %1$s</string>
+    <string name="look_classic">Classic</string>
+    <string name="look_iisu_light">iiSU light</string>
+    <string name="look_iisu_dark">iiSU dark</string>
+    <string name="iisu_key_ok">OK</string>
+    <string name="iisu_key_hold">HOLD</string>
+    <string name="iisu_open">Open</string>
+    <string name="iisu_options">Options</string>
+    <string name="iisu_top_bar">Settings</string>
+    <string name="iisu_browse">Browse</string>
     <string name="wallpaper_none">None</string>
     <string name="wallpaper_applied">Wallpaper changed</string>
     <string name="wallpaper_theme_default">Theme default</string>

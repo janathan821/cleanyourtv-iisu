@@ -66,6 +66,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.TextClock;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -135,6 +136,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private FrameLayout root;
     private WallpaperPlayer wallpaperPlayer;
     private GlassView glass;
+    /** The iiSU-style skin (config.xml iisu_skin), or null for the classic look. */
+    private Iisu iisu;
+    /** The skin's title pill, naming the focused app. */
+    private TextView iisuTitle;
+    /** OK is being held (a long press): its release must not play the open sound a second time. */
+    private boolean okHeld;
     private View ambient;
     private TextView heroName;
     /** The top shelf: heroName, plus the cinematic shelf's "Last opened" line and dock position dots. */
@@ -355,6 +362,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         density = getResources().getDisplayMetrics().density;
         // config.xml, overlaid by config.json from a pushed theme (see Config and tools/theme.sh).
         Config cfg = Config.load(this);
+        iisu = cfg.iisuSkin.isEmpty() ? null : new Iisu(this, cfg.iisuSkin);
         appLibrarySelection = cfg.appLibrarySelection;
         // restore_key_services: after a force stop, put back the remote's accessibility helpers that Android took
         // off the list (needs WRITE_SECURE_SETTINGS, granted by build-and-install with RESTORE_KEY_SERVICES=1).
@@ -519,6 +527,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                     AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         }
         adapter = new AppAdapter(this, this, COLUMNS, cfg);
+        adapter.setIisu(iisu);
         dockApps = cfg.dockApps;
         fillDockLeavesSlots = !cfg.fillDock;
         Order savedOrder = Order.load(Order.file(this));
@@ -685,11 +694,18 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
+        if (iisu != null) applyIisuSkin();
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
             if (!onTile) hideGlass();
+            if (iisu != null && oldF != null && newF != null && hasWindowFocus()) iisu.playMove();
+            // A top-bar pill names itself in the title; an icon-only one keeps its name as the description.
+            if (iisu != null && newF instanceof TextView && newF.getParent() == findViewById(R.id.topButtons)) {
+                CharSequence name = ((TextView) newF).getText();
+                setIisuTitle(name == null || name.length() == 0 ? newF.getContentDescription() : name);
+            }
         });
 
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -1085,6 +1101,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (iisu != null) iisu.releaseSounds();
         unregisterReceiver(packageReceiver);
         wallpaperPlayer.close();
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
@@ -1128,6 +1145,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (iisu != null) playOkSound(event);
         if (handleSettingsKey(event)) return true;
         if (tileMenuEnabled && !reordering && openPopup == null && cardPrompt == null
                 && event.getKeyCode() == KeyEvent.KEYCODE_MENU) {
@@ -1479,6 +1497,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     public void onTileFocused(int position, View card) {
         lastFocused = position;
+        if (iisu != null) setIisuTitle(adapter.labelAt(position));
         lastFocusedKey = adapter.keyAt(position);
         // Focus restored before the first layout (cold start): the tile has no size yet, and the glass
         // would be sized to 2*pad. Run again once the tile is laid out.
@@ -1572,6 +1591,114 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!glassShown || card.getWidth() != glassCardW || glass.getWidth() != w || glass.getHeight() != h) {
             onTileFocused(pos, card);
         }
+    }
+
+    // ---- iiSU skin -------------------------------------------------------------------------------
+
+    /**
+     * Restyles the views onCreate built into the iiSU look (see Iisu). Config has already turned off everything that
+     * would paint under the tiles, so this only changes colours, shapes and fonts and adds the title pill and hints.
+     */
+    private void applyIisuSkin() {
+        root.setBackground(iisu.background());
+        glass.setIisuRing();
+        hero.setVisibility(View.GONE);
+        int text = iisu.text(), dim = iisu.textDim();
+
+        // Header: no greeting; the clock and the short date share one pill at the left.
+        greeting.setVisibility(View.GONE);
+        clockBlock.setBackground(iisu.panel(28));
+        iisu.lift(clockBlock, 4);
+        clockBlock.setPadding(dp(22), dp(6), dp(22), dp(4));
+        clockBlock.setMinimumHeight(dp(56));
+        ((LinearLayout) clockBlock).setGravity(Gravity.CENTER_VERTICAL);
+        RelativeLayout.LayoutParams blockLp = (RelativeLayout.LayoutParams) clockBlock.getLayoutParams();
+        // Pinned to both the start and the buttons, the pill would stretch across the header whatever its width.
+        blockLp.removeRule(RelativeLayout.START_OF);
+        blockLp.removeRule(RelativeLayout.LEFT_OF);
+        blockLp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+        clockBlock.setLayoutParams(blockLp);
+        TextView clock = findViewById(R.id.clock);
+        clock.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30f);
+        clock.setTextColor(text);
+        ((TextView) findViewById(R.id.ampm)).setTextColor(dim);
+        ViewGroup clockRow = (ViewGroup) clock.getParent();
+        clockRow.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
+        View divider = clockRow.getChildAt(2);
+        divider.setBackgroundColor(dim);
+        ((LinearLayout.LayoutParams) divider.getLayoutParams()).height = dp(20);
+        TextClock date = findViewById(R.id.date);
+        date.setFormat12Hour("EEE d MMM");
+        date.setFormat24Hour("EEE d MMM");
+        date.setTextColor(dim);
+        date.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f);
+        date.getLayoutParams().width = ViewGroup.LayoutParams.WRAP_CONTENT;
+        LinearLayout.LayoutParams dateBox = (LinearLayout.LayoutParams) ((View) date.getParent()).getLayoutParams();
+        dateBox.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+        dateBox.weight = 0f;
+        shamsiDate.setTextColor(text);
+        stats.setTextColor(dim);
+
+        // Top bar: frosted pills that turn into the cyan-to-violet gradient on focus.
+        for (int id : new int[]{R.id.btnInputs, R.id.btnWifi, R.id.btnReorder, R.id.btnLibraryTop, R.id.btnSettings}) {
+            TextView pill = findViewById(id);
+            pill.setBackground(iisu.pill());
+            pill.setTextColor(iisu.pillText());
+            pill.setCompoundDrawableTintList(iisu.pillText());
+            iisu.lift(pill, 3);
+        }
+        if (wifiPlainTint != null) wifiPlainTint = iisu.pillText();
+
+        // The grid scrolls inside one big frosted panel, clipped to its rounded corners; the hints sit under it.
+        View panel = (View) grid.getParent();
+        panel.setBackground(iisu.panel(30));
+        panel.setClipToOutline(true);
+        iisu.lift(panel, 6);
+        LinearLayout.LayoutParams panelLp = (LinearLayout.LayoutParams) panel.getLayoutParams();
+        panelLp.topMargin = dp(20);
+        panelLp.bottomMargin = dp(84);
+        panel.setLayoutParams(panelLp);
+
+        iisuTitle = iisu.titlePill(root);
+        iisuTitle.setVisibility(View.INVISIBLE);
+        iisu.hintChip(root, Gravity.BOTTOM | Gravity.LEFT, new String[][]{
+                {getString(R.string.iisu_key_ok), getString(R.string.iisu_open)},
+                {getString(R.string.iisu_key_hold), getString(R.string.iisu_options)}});
+        iisu.hintChip(root, Gravity.BOTTOM | Gravity.RIGHT, new String[][]{
+                {"\u25B2", getString(R.string.iisu_top_bar)},
+                {"\u25C0 \u25B6", getString(R.string.iisu_browse)}});
+        iisu.applyFonts(findViewById(R.id.leftBlock));
+        iisu.applyFonts(findViewById(R.id.topButtons));
+        // The glass draws over everything, the new pill and chips included.
+        glass.bringToFront();
+        iisu.loadSounds();
+    }
+
+    /** The title pill's text; with nothing to name yet it stays hidden rather than an empty pill. */
+    private void setIisuTitle(CharSequence text) {
+        iisuTitle.setText(text);
+        iisuTitle.setVisibility(text == null || text.length() == 0 ? View.INVISIBLE : View.VISIBLE);
+    }
+
+    /** The open chime: on OK's release, or once when a hold opens a menu (whose release then stays quiet). */
+    private void playOkSound(KeyEvent event) {
+        int code = event.getKeyCode();
+        if (code != KeyEvent.KEYCODE_DPAD_CENTER && code != KeyEvent.KEYCODE_ENTER
+                && code != KeyEvent.KEYCODE_NUMPAD_ENTER) return;
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (event.getRepeatCount() == 0) {
+                okHeld = false;
+            } else if (!okHeld) {
+                okHeld = true;
+                iisu.playOpen();
+            }
+        } else if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled() && !okHeld) {
+            iisu.playOpen();
+        }
+    }
+
+    private int dp(float v) {
+        return Math.round(v * density);
     }
 
     // ---- top shelf -------------------------------------------------------------------------------
@@ -2126,6 +2253,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override public void onLibraryFocused() {
         libraryFocusPending = false;
+        if (iisu != null) setIisuTitle(getString(R.string.app_library));
         hideGlass();
         hideHero();
     }
@@ -2875,6 +3003,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** Drop in: fade and unfold from the top edge, hanging under the anchor pill. */
     private void dropIn(PopupWindow popup, View panel, View anchor, int gravity) {
+        if (iisu != null) iisu.skinPopup(panel);
         panel.setAlpha(0f);
         panel.setPivotY(0f);
         panel.setScaleY(0.92f);

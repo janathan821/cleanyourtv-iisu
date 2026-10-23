@@ -24,6 +24,9 @@ public final class LauncherSettingsActivity extends Activity {
     private static final int[] DOCK_OPACITIES = {100, 70, 50, 30};
     private final TextView[] dockChoices = new TextView[DOCK_OPACITIES.length];
     private TextView wallpaperChoice;
+    private TextView lookChoice;
+    /** The Look row's choice: "" (classic), Iisu.LIGHT or Iisu.DARK. */
+    private String iisuSkin;
     private TextView animationsChoice;
     private TextView advancedChoice;
     private TextView followThemeChoice;
@@ -94,6 +97,15 @@ public final class LauncherSettingsActivity extends Activity {
             reverseRow(rowChoices);
             reverseRow(dockChoices);
         }
+        iisuSkin = config.iisuSkin;
+        lookChoice = findViewById(R.id.lookChoice);
+        lookChoice.setOnClickListener(v -> {
+            // Classic, iiSU light, iiSU dark, round again.
+            iisuSkin = iisuSkin.isEmpty() ? Iisu.LIGHT : Iisu.LIGHT.equals(iisuSkin) ? Iisu.DARK : "";
+            choices.edit().putString(Config.IISU_SKIN_KEY, iisuSkin).apply();
+            changed();
+            refresh();
+        });
         wallpaperChoice = findViewById(R.id.wallpaperChoice);
         wallpaperChoice.setOnClickListener(v -> showWallpaperPicker());
         animationsChoice = findViewById(R.id.animationsChoice);
@@ -123,11 +135,12 @@ public final class LauncherSettingsActivity extends Activity {
             if (!hasOnTvChoices()) return;
             choices.edit().remove("columns").remove(Config.ROWS_BELOW_DOCK_KEY).remove("animations")
                     .remove("advanced_effects").remove(Config.WALLPAPER_CHOICE_KEY)
-                    .remove(Config.DOCK_OPACITY_KEY).commit();
+                    .remove(Config.DOCK_OPACITY_KEY).remove(Config.IISU_SKIN_KEY).commit();
             Config current = Config.load(this);
             columns = current.columns;
             rowsBelowDock = current.rowsBelowDock;
             dockOpacity = current.dockOpacity;
+            iisuSkin = current.iisuSkin;
             animations = current.animations;
             advancedEffects = current.animations && current.advancedEffects;
             changed();
@@ -227,6 +240,8 @@ public final class LauncherSettingsActivity extends Activity {
                 getString(advancedEffects ? R.string.on : R.string.off)));
         advancedChoice.setEnabled(animations);
         advancedChoice.setAlpha(animations ? 1f : 0.5f);
+        lookChoice.setText(getString(R.string.look_state, getString(iisuSkin.isEmpty() ? R.string.look_classic
+                : Iisu.LIGHT.equals(iisuSkin) ? R.string.look_iisu_light : R.string.look_iisu_dark)));
         String wallpaperCurrent = choices.getString(Config.WALLPAPER_CHOICE_KEY, null);
         wallpaperChoice.setText(getString(R.string.wallpaper_state,
                 "none".equals(wallpaperCurrent) ? getString(R.string.wallpaper_none)
@@ -238,7 +253,8 @@ public final class LauncherSettingsActivity extends Activity {
     private boolean hasOnTvChoices() {
         return choices.contains("columns") || choices.contains(Config.ROWS_BELOW_DOCK_KEY)
                 || choices.contains("animations") || choices.contains("advanced_effects")
-                || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY);
+                || choices.contains(Config.WALLPAPER_CHOICE_KEY) || choices.contains(Config.DOCK_OPACITY_KEY)
+                || choices.contains(Config.IISU_SKIN_KEY);
     }
 
     private void open(Intent intent) {

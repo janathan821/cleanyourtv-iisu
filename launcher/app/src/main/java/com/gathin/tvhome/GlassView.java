@@ -26,6 +26,8 @@ public class GlassView extends View {
     private int glowRgb = 0xFFFFFF;
     /** Glow strength: the white glow stays faint, a coloured one needs more alpha to read as warm light. */
     private int glowAlpha = 0x30;
+    /** iiSU skin: a thick cyan-to-violet ring with a cyan glow and no glass fill, so the artwork stays clear. */
+    private boolean ring;
 
     public GlassView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -58,6 +60,17 @@ public class GlassView extends View {
         invalidate();
     }
 
+    /** Switches to the iiSU skin's ring (Iisu); there is no way back, Home is recreated to leave the skin. */
+    void setIisuRing() {
+        ring = true;
+        glowRgb = Iisu.CYAN & 0xFFFFFF;
+        glowAlpha = 0x60;
+        rim.setStrokeWidth(4f * density);
+        rim.setColor(0xFFFFFFFF);
+        if (getWidth() > 0) onSizeChanged(getWidth(), getHeight(), getWidth(), getHeight());
+        invalidate();
+    }
+
     void setRadius(float px) {
         radius = px;
         invalidate();
@@ -66,6 +79,11 @@ public class GlassView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        if (ring) {
+            rim.setShader(new LinearGradient(0, 0, w, h, new int[]{Iisu.CYAN, Iisu.VIOLET, Iisu.PINK}, null,
+                    Shader.TileMode.CLAMP));
+            return;
+        }
         fill.setShader(new LinearGradient(0, 0, 0, h, 0x3DFFFFFF, 0x12FFFFFF, Shader.TileMode.CLAMP));
         specular.setShader(new LinearGradient(0, 0, 0, h * 0.45f, 0x66FFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
     }
@@ -88,6 +106,13 @@ public class GlassView extends View {
             canvas.drawRoundRect(rect.left - o, rect.top - o, rect.right + o, rect.bottom + o, radius + o, radius + o, glow);
         }
 
+        if (ring) {
+            // The stroke is centred on the edge: pull it in by half so the ring hugs the tile's bezel.
+            float half = rim.getStrokeWidth() / 2f;
+            canvas.drawRoundRect(rect.left + half, rect.top + half, rect.right - half, rect.bottom - half,
+                    radius - half, radius - half, rim);
+            return;
+        }
         canvas.drawRoundRect(rect, radius, radius, fill);
 
         // Sheen across the top 45%: clipRect stays on the GPU (clipPath did not on the MT5895) and
